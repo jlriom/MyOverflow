@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="MyOverflow.AppHost\MyOverflow.AppHost.csproj" />
+  <Project Path="MyOverflow.ServiceDefaults\MyOverflow.ServiceDefaults.csproj" />
+</Solution>
