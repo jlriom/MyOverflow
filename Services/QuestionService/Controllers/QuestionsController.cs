@@ -1,28 +1,28 @@
 using System.Security.Claims;
+using Contracts;
+using FastExpressionCompiler;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuestionService.Data;
 using QuestionService.Dtos;
 using QuestionService.Models;
+using QuestionService.Services;
+using Wolverine;
 
 namespace QuestionService.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class QuestionsController (QuestionDbContext db): ControllerBase
+public class QuestionsController (QuestionDbContext db, IMessageBus bus, TagService tagService): ControllerBase
 {
     [Authorize]
     [HttpPost]
     public async Task<ActionResult<Question>> CreateQuestion(CreateQuestionDto dto)
     {
-        var validTags = await db.Tags.Where(x => dto.Tags.Contains(x.Slug)).ToListAsync();
-        
-        var missingTags = dto.Tags.Except(validTags.Select(tag => tag.Slug).ToList()).ToList();
-
-        if (missingTags.Count != 0)
+        if (!await tagService.AreTagsValidAsync(dto.Tags))
         {
-            return BadRequest($"Invalid tags: {string.Join(", ", missingTags)}");
+            return BadRequest($"Invalid tags");
         }
         
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -41,6 +41,8 @@ public class QuestionsController (QuestionDbContext db): ControllerBase
         
         db.Questions.Add(question);
         await db.SaveChangesAsync();
+        
+        await bus.PublishAsync(new QuestionCreated(question.Id, question.Title, question.Content, question.CreatedAt, question.TagSlugs));
         return Created($"/questions/{question.Id}", question);
     }
 
@@ -80,6 +82,11 @@ public class QuestionsController (QuestionDbContext db): ControllerBase
         var question = await db.Questions.FindAsync(id);
         if (question is null) return NotFound();
 
+        if (!await tagService.AreTagsValidAsync(dto.Tags))
+        {
+            return BadRequest($"Invalid tags");
+        }
+        
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId != question.AskerId) return Forbid();
         
@@ -89,6 +96,8 @@ public class QuestionsController (QuestionDbContext db): ControllerBase
         question.UpdatedAt = DateTime.UtcNow;
         
         await db.SaveChangesAsync();
+        await bus.PublishAsync(new QuestionUpdated(question.Id, question.Title, question.Content, question.TagSlugs.AsArray()));
+        
         return NoContent();
     }
 
@@ -103,6 +112,7 @@ public class QuestionsController (QuestionDbContext db): ControllerBase
         
         db.Questions.Remove(question);
         await db.SaveChangesAsync();
+        await bus.PublishAsync(new QuestionDeleted(question.Id));
         return NoContent();
     }
 }
