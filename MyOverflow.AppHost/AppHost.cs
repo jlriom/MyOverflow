@@ -22,7 +22,7 @@ var typesenseContainer = typesense.GetEndpoint("typesense");
 var questionDb  =postgres.AddDatabase("questionDb");
 
 var rabbitmq = builder.AddRabbitMQ("messaging")
-    .WithDataVolume("messaging-data")
+    .WithDataVolume("rabbitmq-data")
     .WithManagementPlugin(port:15672);
 
 var questionService = builder.AddProject<Projects.QuestionService>("question-svc")
