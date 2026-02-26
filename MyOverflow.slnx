@@ -6,6 +6,7 @@
   <Folder Name="/Services/">
     <Project Path="Services/QuestionService/QuestionService.csproj" />
     <Project Path="Services/SearchService/SearchService.csproj" />
+    <Project Path="Services/YarpReverseProxy/YarpReverseProxy.csproj" />
   </Folder>
   <Project Path="MyOverflow.AppHost\MyOverflow.AppHost.csproj" />
   <Project Path="MyOverflow.ServiceDefaults\MyOverflow.ServiceDefaults.csproj" />

@@ -19,7 +19,7 @@ var typesense = builder.AddContainer("typesense", "typesense/typesense", "29.0")
 
 var typesenseContainer = typesense.GetEndpoint("typesense");
 
-var questionDb  =postgres.AddDatabase("questionDb");
+var questionDb = postgres.AddDatabase("questionDb");
 
 var rabbitmq = builder.AddRabbitMQ("messaging")
     .WithDataVolume("rabbitmq-data")
@@ -39,6 +39,12 @@ var searchService = builder.AddProject<Projects.SearchService>("search-srv")
     .WithReference(rabbitmq)
     .WaitFor(typesense)
     .WaitFor(rabbitmq);
-    
+
+var yarpService = builder.AddProject<Projects.YarpReverseProxy>("yarp-srv")
+    .WithReference(questionService)
+    .WithReference(searchService)
+    .WaitFor(questionService)
+    .WaitFor(searchService)
+    .WithExternalHttpEndpoints();
 
 builder.Build().Run();
